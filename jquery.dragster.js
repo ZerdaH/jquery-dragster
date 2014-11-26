@@ -1,9 +1,12 @@
 (function ($) {
+    "use strict";
 
     $.fn.dragster = function (options) {
         var settings = $.extend({
+            drop: $.noop,
             enter: $.noop,
-            leave: $.noop
+            leave: $.noop,
+            over: $.noop
         }, options);
 
         return this.each(function () {
@@ -12,15 +15,22 @@
                 $this = $(this);
 
             $this.on({
+                drop: function (event) {
+                    first = second = false;
+                    $this.trigger('dragster:drop', event);
+                },
                 dragenter: function (event) {
+                    event.preventDefault();
                     if (first) {
-                        return second = true;
+                        second = true;
+                        return;
                     } else {
                         first = true;
                         $this.trigger('dragster:enter', event);
                     }
                 },
                 dragleave: function (event) {
+                    event.preventDefault();
                     if (second) {
                         second = false;
                     } else if (first) {
@@ -30,10 +40,33 @@
                         $this.trigger('dragster:leave', event);
                     }
                 },
-                'dragster:enter': settings.enter,
-                'dragster:leave': settings.leave
+                dragover: function(event) {
+                    event.preventDefault();
+                    $this.trigger('dragster:over', event);
+                },
+                'dragster:drop': function (dragsterEvent, event) {
+                    dragsterEvent.stopPropagation();
+                    settings.drop(dragsterEvent, event);
+                },
+                'dragster:enter': function (dragsterEvent, event) {
+                    dragsterEvent.stopPropagation();
+                    settings.enter(dragsterEvent, event);
+                },
+                'dragster:leave': function (dragsterEvent, event) {
+                    dragsterEvent.stopPropagation();
+                    settings.leave(dragsterEvent, event);
+                },
+                'dragster:over': function (dragsterEvent, event) {
+                    dragsterEvent.stopPropagation();
+                    settings.over(dragsterEvent, event);
+                },
             });
         });
     };
 
-}(jQuery));
+    $.fn.dragsterOff = function () {
+        return this.each(function () {
+            $(this).off('drop dragenter dragleave dragover dragster:drop dragster:enter dragster:leave dragster:over');
+        });
+    };
+})(jQuery);
